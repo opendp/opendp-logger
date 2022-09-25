@@ -9,9 +9,17 @@ income_preprocessor = (
     # Selects a column of df, Vec<str>
     trans.make_select_column(key="income", TOA=str)
 )
-income_preprocessor.ast
+
+# the ast object maintained in the pipeline
+print("ast:", income_preprocessor.ast)
+
+# the ast to json
+json_obj = income_preprocessor.to_json()
+print("json:", json_obj)
 
 from opendp_logger.constructor import opendp_constructor
-test = opendp_constructor(income_preprocessor.to_json(), ptype="json")
 
-print(test.to_json())
+# reconstruct the obj from the json string
+test = opendp_constructor(json_obj, ptype="json")
+
+print(test.ast)

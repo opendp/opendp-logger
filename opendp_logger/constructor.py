@@ -1,5 +1,6 @@
 import opendp_logger.trans as trans
 import opendp_logger.meas as meas
+import opendp_logger.comb as comb
 
 from typing import Literal
 import json
@@ -39,16 +40,26 @@ def cast_type_to_str(d):
     return d
 
 def tree_walker(branch):
-    if isinstance(branch, dict):
-        keys = branch.keys()
-        if ('to' in keys) and ('from' in keys):
-            return tree_walker(branch["from"]) >> tree_walker(branch["to"])
-    if branch["type"] == "Transformation":
-        return getattr(trans, branch["func"])(*branch["args"], **branch["kwargs"])
-    elif branch["type"] == "Measurement":
-        return getattr(meas, branch["func"])(*branch["args"], **branch["kwargs"])
+    if branch["module"] == "trans":
+        module = trans
+    elif branch["module"] == "meas":
+        module = meas
+    elif branch["module"] == "comb":
+        args = list(branch["args"])
+        for i in range(len(branch["args"])):
+            if isinstance(args[i], dict):
+                args[i] = tree_walker(args[i])
+        branch["args"] = tuple(args)
+
+        for k, v in branch["kwargs"]:
+            if isinstance(v, dict):
+                branch["kwargs"][k] = tree_walker(v)
+
+        module = comb
     else:
         raise ValueError(f"Type {branch['type']} not in Literal[\"Transformation\", \"Measurement\"].")
+    
+    return getattr(module, branch["func"])(*branch["args"], **branch["kwargs"])
 
 def opendp_constructor(parse_str: str, ptype: Literal["json", "yaml"]):
     if ptype == "json":
