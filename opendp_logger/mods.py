@@ -1,4 +1,4 @@
-from typing import Literal, get_type_hints, Union
+from typing import get_type_hints, Union
 from opendp import Transformation, Measurement
 import opendp as opendp
 import json
@@ -62,6 +62,8 @@ def wrapper(f_str, f, module_name):
         }
 
         return ret_trans
+
+    wrapped.__annotations__ = f.__annotations__
 
     return wrapped
 
