@@ -43,11 +43,19 @@ def wrapper(f_str, f, module_name):
         args = list(args)
         for i in range(len(args)):
             if type(args[i]) == Transformation or type(args[i]) == Measurement:
+                # if an input hasn't been instrumented with an AST, return without an AST
+                if not hasattr(args[i], 'ast'):
+                    return ret_trans
+
                 args[i] = args[i].ast
         args = tuple(args)
 
         for k, v in kwargs.items():
             if type(v) == Transformation or type(v) == Measurement:
+                # if an input hasn't been instrumented with an AST, return without an AST
+                if not hasattr(v, 'ast'):
+                    return ret_trans
+                    
                 kwargs[k] = v.ast
 
         ret_trans.ast = {

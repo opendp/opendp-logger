@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="opendp-logger",
-    version="0.1.4",
+    version="0.1.5",
     description="A logger wrapper for OpenDP to keep track of, import, export the AST",
     long_description = open("README.md", "r").read(),
     long_description_content_type = "text/markdown",
@@ -22,8 +22,7 @@ setup(
     packages=find_packages(),
     python_requires=">=3.8, <4",
     install_requires=[
-        "opendp >= 0.6.0",
-        "PyYAML >= 6.0"
+        "opendp >= 0.6.0"
     ],
     package_data={"oblv": ["py.typed"]},
 )
