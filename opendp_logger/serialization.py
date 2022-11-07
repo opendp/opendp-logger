@@ -1,9 +1,12 @@
-from typing import get_type_hints, Union
+from typing import get_type_hints
 from opendp import Transformation, Measurement
 import opendp as opendp
 import json
 
 import pkg_resources
+
+import importlib
+
 
 PT_TYPE_PREFIX = "py_type:"
 
@@ -68,38 +71,27 @@ def wrapper(f_str, f, module_name):
     return wrapped
 
 
-def Measurement__rshift__(self, other: "Transformation"):
-    if isinstance(other, Transformation):
-        from opendp_logger.combinators import make_chain_tm
-
-        return make_chain_tm(other, self)
-
-    raise ValueError(f"rshift expected a postprocessing transformation, got {other}")
+enabled = False
 
 
-def Transformation__rshift__(self, other: Union["Measurement", "Transformation"]):
-    if isinstance(other, Measurement):
-        from opendp_logger.combinators import make_chain_mt
+def enable_logging():
 
-        return make_chain_mt(other, self)
+    global enabled
+    if enabled:
+        return
 
-    if isinstance(other, Transformation):
-        from opendp_logger.combinators import make_chain_tt
+    for name in ["transformations", "measurements", "combinators"]:
+        module = importlib.import_module(f"opendp.{name}")
+        for f in dir(module):
+            if f.startswith("make_"):
+                module.__dict__[f] = wrapper(f, getattr(module, f), name)
 
-        return make_chain_tt(other, self)
+    Transformation = opendp.Transformation
+    Measurement = opendp.Measurement
 
-    raise ValueError(f"rshift expected a measurement or transformation, got {other}")
+    Transformation.to_json = to_json
+    # Transformation.to_yaml = to_yaml
+    Measurement.to_json = to_json
+    # Measurement.to_yaml = to_yaml
 
-
-Transformation = opendp.Transformation
-Measurement = opendp.Measurement
-
-Transformation.ast = None
-# copy_rshift = Transformation.__rshift__
-Transformation.__rshift__ = Transformation__rshift__
-Measurement.__rshift__ = Measurement__rshift__
-
-Transformation.to_json = to_json
-# Transformation.to_yaml = to_yaml
-Measurement.to_json = to_json
-# Measurement.to_yaml = to_yaml
+    enabled = True

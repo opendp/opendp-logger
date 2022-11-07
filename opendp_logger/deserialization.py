@@ -1,14 +1,18 @@
-import opendp_logger.transformations as transformations
-import opendp_logger.measurements as measurements
-import opendp_logger.combinators as combinators
+import opendp.transformations as transformations
+import opendp.measurements as measurements
+import opendp.combinators as combinators
 
-from typing import Literal
 import json
 import yaml
 import builtins
 
-from opendp_logger import OPENDP_VERSION
-from opendp_logger.mods import PT_TYPE_PREFIX
+from opendp_logger.serialization import PT_TYPE_PREFIX, OPENDP_VERSION
+
+__all__ = [
+    "make_load_json",
+    "make_load_yaml",
+    "make_load_object"
+]
 
 def cast_str_to_type(d):
     for k, v in d.items():
@@ -54,14 +58,18 @@ def tree_walker(branch):
     
     return getattr(module, branch["func"])(*branch["args"], **branch["kwargs"])
 
-def make_opendp_from_json(parse_str: str, ptype: Literal["json", "yaml"]):
-    if ptype == "json":
-        obj = json.loads(parse_str, object_hook=jsonOpenDPDecoder)
-    elif ptype == "yaml":
-        obj = cast_str_to_type(yaml.load(parse_str))
-    else:
-        raise ValueError("Can only parse json and yaml formats.")
 
+def make_load_json(parse_str: str):
+    obj = json.loads(parse_str, object_hook=jsonOpenDPDecoder)
+    return make_load_object(obj)
+
+
+def make_load_yaml(parse_str: str):
+    obj = cast_str_to_type(yaml.load(parse_str))
+    return make_load_object(obj)
+
+
+def make_load_object(obj: str):
     if obj["version"] != OPENDP_VERSION:
         raise ValueError(
             f"OpenDP version in parsed object ({obj['version']}) does not match the current installation ({OPENDP_VERSION})."
