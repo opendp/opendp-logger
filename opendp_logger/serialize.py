@@ -31,11 +31,6 @@ def to_json(self):
     return json.dumps({"version": OPENDP_VERSION, "ast": self.ast}, default=serialize)
 
 
-# # export to yaml
-# def to_yaml(self):
-#     return yaml.dump({"version": OPENDP_VERSION, "ast": cast_type_to_str(self.ast)})
-
-
 def wrapper(f_str, f, module_name):
     def wrapped(*args, **kwargs):
         ret_trans = f(*args, **kwargs)
@@ -44,7 +39,7 @@ def wrapper(f_str, f, module_name):
         for i in range(len(args)):
             if type(args[i]) == Transformation or type(args[i]) == Measurement:
                 # if an input hasn't been instrumented with an AST, return without an AST
-                if not hasattr(args[i], 'ast'):
+                if not hasattr(args[i], "ast"):
                     return ret_trans
 
                 args[i] = args[i].ast
@@ -53,9 +48,9 @@ def wrapper(f_str, f, module_name):
         for k, v in kwargs.items():
             if type(v) == Transformation or type(v) == Measurement:
                 # if an input hasn't been instrumented with an AST, return without an AST
-                if not hasattr(v, 'ast'):
+                if not hasattr(v, "ast"):
                     return ret_trans
-                    
+
                 kwargs[k] = v.ast
 
         ret_trans.ast = {
@@ -91,7 +86,5 @@ def enable_logging():
 
     opendp.Transformation.to_json = to_json
     opendp.Measurement.to_json = to_json
-    # opendp.Transformation.to_yaml = to_yaml
-    # opendp.Measurement.to_yaml = to_yaml
 
     enabled = True
