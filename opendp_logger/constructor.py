@@ -1,29 +1,22 @@
-import opendp_logger.trans as trans
-import opendp_logger.meas as meas
-import opendp_logger.comb as comb
+import opendp_logger.transformations as transformations
+import opendp_logger.measurements as measurements
+import opendp_logger.combinators as combinators
 
 from typing import Literal
 import json
 import yaml
-import re
 import builtins
 
-PT_TYPE = "^py_type:*"
-
 from opendp_logger import OPENDP_VERSION
-
-blocklist = {
-    "Measurement": [],
-    "Transformation": []
-}
+from opendp_logger.mods import PT_TYPE_PREFIX
 
 def cast_str_to_type(d):
     for k, v in d.items():
         if isinstance(v, dict):
             cast_str_to_type(v)
         elif isinstance(v, str):
-            if re.search(PT_TYPE, v):
-                d[k] = getattr(builtins, v[8:])
+            if v.startswith(PT_TYPE_PREFIX):
+                d[k] = getattr(builtins, v[len(PT_TYPE_PREFIX):])
     return d
 
 def jsonOpenDPDecoder(obj):
@@ -40,11 +33,11 @@ def cast_type_to_str(d):
     return d
 
 def tree_walker(branch):
-    if branch["module"] == "trans":
-        module = trans
-    elif branch["module"] == "meas":
-        module = meas
-    elif branch["module"] == "comb":
+    if branch["module"] == "transformations":
+        module = transformations
+    elif branch["module"] == "measurements":
+        module = measurements
+    elif branch["module"] == "combinators":
         args = list(branch["args"])
         for i in range(len(branch["args"])):
             if isinstance(args[i], dict):
@@ -55,13 +48,13 @@ def tree_walker(branch):
             if isinstance(v, dict):
                 branch["kwargs"][k] = tree_walker(v)
 
-        module = comb
+        module = combinators
     else:
         raise ValueError(f"Type {branch['type']} not in Literal[\"Transformation\", \"Measurement\"].")
     
     return getattr(module, branch["func"])(*branch["args"], **branch["kwargs"])
 
-def opendp_constructor(parse_str: str, ptype: Literal["json", "yaml"]):
+def make_opendp_from_json(parse_str: str, ptype: Literal["json", "yaml"]):
     if ptype == "json":
         obj = json.loads(parse_str, object_hook=jsonOpenDPDecoder)
     elif ptype == "yaml":

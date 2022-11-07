@@ -24,7 +24,7 @@ setup(
     packages=find_packages(),
     python_requires=">=3.7, <4",
     install_requires=[
-        "opendp >= 0.5.0",
+        "opendp >= 0.6.0",
         "PyYAML >= 6.0"
     ],
     package_data={"oblv": ["py.typed"]},
