@@ -31,14 +31,9 @@ def to_json(self):
     return json.dumps({"version": OPENDP_VERSION, "ast": self.ast}, default=serialize)
 
 
-"""# export to yaml
-def to_yaml(self):
-    return yaml.dump(
-        {
-            "version": OPENDP_VERSION,
-            "ast": cast_type_to_str(self.ast)
-        }
-    )"""
+# # export to yaml
+# def to_yaml(self):
+#     return yaml.dump({"version": OPENDP_VERSION, "ast": cast_type_to_str(self.ast)})
 
 
 def wrapper(f_str, f, module_name):
@@ -86,12 +81,9 @@ def enable_logging():
             if f.startswith("make_"):
                 module.__dict__[f] = wrapper(f, getattr(module, f), name)
 
-    Transformation = opendp.Transformation
-    Measurement = opendp.Measurement
-
-    Transformation.to_json = to_json
-    # Transformation.to_yaml = to_yaml
-    Measurement.to_json = to_json
-    # Measurement.to_yaml = to_yaml
+    opendp.Transformation.to_json = to_json
+    opendp.Measurement.to_json = to_json
+    # opendp.Transformation.to_yaml = to_yaml
+    # opendp.Measurement.to_yaml = to_yaml
 
     enabled = True

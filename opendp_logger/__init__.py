@@ -1,2 +1,2 @@
-from opendp_logger.serialization import enable_logging
-from opendp_logger.deserialization import *
+from opendp_logger.serialize import enable_logging
+from opendp_logger.deserialize import *

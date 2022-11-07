@@ -6,7 +6,7 @@ import json
 import yaml
 import builtins
 
-from opendp_logger.serialization import PT_TYPE_PREFIX, OPENDP_VERSION
+from opendp_logger.serialize import PT_TYPE_PREFIX, OPENDP_VERSION
 
 __all__ = [
     "make_load_json",
