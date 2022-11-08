@@ -16,19 +16,34 @@ try:
 except pkg_resources.DistributionNotFound:
     OPENDP_VERSION = "0.0.0+development"
 
+
 # allow dumps to serialize object types
-def serialize(obj):
-    """JSON serializer for objects not serializable by default json code"""
+class DPL_Encoder(json.JSONEncoder):
+    def default(self, obj):
+        """JSON serializer for objects not serializable by default json code"""
 
-    if isinstance(obj, type):
-        return PT_TYPE_PREFIX + obj.__name__
+        if isinstance(obj, type):
+            return PT_TYPE_PREFIX + obj.__name__
 
-    return obj.__dict__
+        return obj.__dict__
+
+    def encode(self, obj) -> str:
+        def hint_tuples(item):
+            if isinstance(item, tuple):
+                return {"_tuple": True, "_items": [hint_tuples(e) for e in item]}
+            if isinstance(item, list):
+                return [hint_tuples(e) for e in item]
+            if isinstance(item, dict):
+                return {key: hint_tuples(value) for key, value in item.items()}
+            else:
+                return item
+
+        return super().encode(hint_tuples(obj))
 
 
 # export to json
 def to_json(self):
-    return json.dumps({"version": OPENDP_VERSION, "ast": self.ast}, default=serialize)
+    return json.dumps({"version": OPENDP_VERSION, "ast": self.ast}, cls=DPL_Encoder)
 
 
 def wrapper(f_str, f, module_name):

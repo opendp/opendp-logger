@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="opendp-logger",
-    version="0.1.6",
+    version="0.1.7",
     description="A logger wrapper for OpenDP to keep track of, import, export the AST",
     long_description = open("README.md", "r").read(),
     long_description_content_type = "text/markdown",
