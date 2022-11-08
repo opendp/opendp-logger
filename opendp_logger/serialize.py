@@ -1,6 +1,7 @@
 from typing import get_type_hints
 from opendp import Transformation, Measurement
 import opendp as opendp
+from opendp.typing import RuntimeType
 import json
 
 import pkg_resources
@@ -24,21 +25,25 @@ class DPL_Encoder(json.JSONEncoder):
 
         if isinstance(obj, type):
             return PT_TYPE_PREFIX + obj.__name__
+        if isinstance(obj, RuntimeType):
+            return str(obj)
 
         return obj.__dict__
 
     def encode(self, obj) -> str:
-        def hint_tuples(item):
+        def walker(item):
+            if isinstance(item, (Transformation, Measurement)):
+                return walker(item.ast)
             if isinstance(item, tuple):
-                return {"_tuple": True, "_items": [hint_tuples(e) for e in item]}
+                return {"_type": "Tuple", "_items": [walker(e) for e in item]}
             if isinstance(item, list):
-                return [hint_tuples(e) for e in item]
+                return [walker(e) for e in item]
             if isinstance(item, dict):
-                return {key: hint_tuples(value) for key, value in item.items()}
+                return {key: walker(value) for key, value in item.items()}
             else:
                 return item
-
-        return super().encode(hint_tuples(obj))
+    
+        return super().encode(walker(obj))
 
 
 # export to json
@@ -48,35 +53,16 @@ def to_json(self):
 
 def wrapper(f_str, f, module_name):
     def wrapped(*args, **kwargs):
-        ret_trans = f(*args, **kwargs)
-
-        args = list(args)
-        for i in range(len(args)):
-            if type(args[i]) == Transformation or type(args[i]) == Measurement:
-                # if an input hasn't been instrumented with an AST, return without an AST
-                if not hasattr(args[i], "ast"):
-                    return ret_trans
-
-                args[i] = args[i].ast
-        args = tuple(args)
-
-        for k, v in kwargs.items():
-            if type(v) == Transformation or type(v) == Measurement:
-                # if an input hasn't been instrumented with an AST, return without an AST
-                if not hasattr(v, "ast"):
-                    return ret_trans
-
-                kwargs[k] = v.ast
-
-        ret_trans.ast = {
+        chain = f(*args, **kwargs)
+        chain.ast = {
+            "_type": "constructor",
             "func": f_str,
             "module": module_name,
             "type": get_type_hints(f)["return"].__name__,
             "args": args,
             "kwargs": kwargs,
         }
-
-        return ret_trans
+        return chain
 
     wrapped.__annotations__ = f.__annotations__
     wrapped.__doc__ = f.__doc__

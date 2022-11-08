@@ -10,54 +10,42 @@ from opendp_logger.serialize import PT_TYPE_PREFIX, OPENDP_VERSION
 __all__ = ["make_load_json", "make_load_object"]
 
 
-def cast_str_to_type(d):
-    for k, v in d.items():
-        if isinstance(v, dict):
-            cast_str_to_type(v)
-        elif isinstance(v, str):
-            if v.startswith(PT_TYPE_PREFIX):
-                d[k] = getattr(builtins, v[len(PT_TYPE_PREFIX) :])
-    return d
-
-
 def jsonOpenDPDecoder(obj):
     if isinstance(obj, dict):
-        return cast_str_to_type(obj)
+        if obj.get("_type") == "Tuple":
+            return tuple(jsonOpenDPDecoder(i) for i in obj["_items"])
+        return {k: jsonOpenDPDecoder(v) for k, v in obj.items()}
+
+    if isinstance(obj, str) and obj.startswith(PT_TYPE_PREFIX):
+        return getattr(builtins, obj[len(PT_TYPE_PREFIX) :])
     return obj
 
 
-def cast_type_to_str(d):
-    for k, v in d.items():
-        if isinstance(v, dict):
-            cast_type_to_str(v)
-        elif isinstance(v, type):
-            d[k] = "pytype_" + str(v.__name__)
-    return d
-
-
 def tree_walker(branch):
-    if branch["module"] == "transformations":
-        module = transformations
-    elif branch["module"] == "measurements":
-        module = measurements
-    elif branch["module"] == "combinators":
-        args = list(branch["args"])
-        for i in range(len(branch["args"])):
-            if isinstance(args[i], dict):
-                args[i] = tree_walker(args[i])
-        branch["args"] = tuple(args)
-
-        for k, v in branch["kwargs"]:
-            if isinstance(v, dict):
-                branch["kwargs"][k] = tree_walker(v)
-
-        module = combinators
-    else:
-        raise ValueError(
-            f"Type {branch['type']} not in Literal[\"Transformation\", \"Measurement\"]."
-        )
-
-    return getattr(module, branch["func"])(*branch["args"], **branch["kwargs"])
+    if isinstance(branch, dict):
+        if branch.get('_type') == "constructor":
+            branch = {
+                **branch,
+                "args": tuple(tree_walker(i) for i in branch['args']),
+                "kwargs": {k: tree_walker(v) for k, v in branch['kwargs'].items()},
+            }
+            if branch["module"] == "transformations":
+                module = transformations
+            elif branch["module"] == "measurements":
+                module = measurements
+            elif branch["module"] == "combinators":
+                module = combinators
+            else:
+                raise ValueError(
+                    f"Type {branch['type']} not in Literal[\"Transformation\", \"Measurement\"]."
+                )
+            return getattr(module, branch["func"])(*branch["args"], **branch["kwargs"])
+        return {k: tree_walker(v) for k, v in branch.items()}
+    
+    if isinstance(branch, list):
+        return list(tree_walker(i) for i in branch)
+    
+    return branch
 
 
 def make_load_json(parse_str: str):
