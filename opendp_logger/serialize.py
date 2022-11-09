@@ -1,68 +1,20 @@
-from typing import get_type_hints
-from opendp import Transformation, Measurement
-import opendp as opendp
-from opendp.typing import RuntimeType
 import json
+import opendp as opendp
 
-import pkg_resources
+from opendp_logger.constants import PT_TYPE_PREFIX, OPENDP_VERSION
 
 import importlib
 
-
-PT_TYPE_PREFIX = "py_type:"
-
-# OPENDP version
-try:
-    OPENDP_VERSION = pkg_resources.get_distribution("opendp").version
-except pkg_resources.DistributionNotFound:
-    OPENDP_VERSION = "0.0.0+development"
+__all__ = ["enable_logging"]
 
 
-# allow dumps to serialize object types
-class DPL_Encoder(json.JSONEncoder):
-    def default(self, obj):
-        """JSON serializer for objects not serializable by default json code"""
-
-        if isinstance(obj, type):
-            return PT_TYPE_PREFIX + obj.__name__
-        if isinstance(obj, RuntimeType):
-            return str(obj)
-
-        return obj.__dict__
-
-    def encode(self, obj) -> str:
-        def walker(item):
-            if isinstance(item, (Transformation, Measurement)):
-                if not hasattr(item, "ast"):
-                    raise ValueError(
-                        "invoke `opendp_logger.enable_logging()` before constructing your measurement"
-                    )
-                return walker(item.ast)
-            if isinstance(item, tuple):
-                return {"_type": "Tuple", "_items": [walker(e) for e in item]}
-            if isinstance(item, list):
-                return [walker(e) for e in item]
-            if isinstance(item, dict):
-                return {key: walker(value) for key, value in item.items()}
-            else:
-                return item
-
-        return super().encode(walker(obj))
-
-
-# export to json
-def to_json(self):
-    return json.dumps({"version": OPENDP_VERSION, "ast": self.ast}, cls=DPL_Encoder)
-
-
-def wrapper(f_str, f, module_name):
+def wrap_constructor(f_str, f, module_name):
     def wrapped(*args, **kwargs):
         chain = f(*args, **kwargs)
-        chain.ast = {
+        chain.log = {
             "_type": "constructor",
             "func": f_str,
             "module": module_name,
-            "type": get_type_hints(f)["return"].__name__,
             "args": args,
             "kwargs": kwargs,
         }
@@ -72,6 +24,30 @@ def wrapper(f_str, f, module_name):
     wrapped.__doc__ = f.__doc__
 
     return wrapped
+
+
+def to_ast(item):
+    if isinstance(item, (opendp.Transformation, opendp.Measurement)):
+        if not hasattr(item, "log"):
+            msg = "invoke `opendp_logger.enable_logging()` before constructing your measurement"
+            raise ValueError(msg)
+
+        return to_ast(item.log)
+    if isinstance(item, tuple):
+        return {"_type": "tuple", "_items": [to_ast(e) for e in item]}
+    if isinstance(item, list):
+        return [to_ast(e) for e in item]
+    if isinstance(item, dict):
+        return {key: to_ast(value) for key, value in item.items()}
+    if isinstance(item, type):
+        return PT_TYPE_PREFIX + item.__name__
+    if isinstance(item, opendp.typing.RuntimeType):
+        return str(item)
+    return item
+
+
+def to_json(chain):
+    return json.dumps({"version": OPENDP_VERSION, "ast": chain.to_ast()})
 
 
 enabled = False
@@ -87,7 +63,10 @@ def enable_logging():
         module = importlib.import_module(f"opendp.{name}")
         for f in dir(module):
             if f.startswith("make_"):
-                module.__dict__[f] = wrapper(f, getattr(module, f), name)
+                module.__dict__[f] = wrap_constructor(f, getattr(module, f), name)
+
+    opendp.Transformation.to_ast = to_ast
+    opendp.Measurement.to_ast = to_ast
 
     opendp.Transformation.to_json = to_json
     opendp.Measurement.to_json = to_json

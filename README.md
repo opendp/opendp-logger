@@ -37,10 +37,7 @@ preprocessor = (
     trans.make_select_column(key="income", TOA=str)
 )
 
-# the ast object maintained in the pipeline
-print("ast:", preprocessor.ast)
-
-# serialize the ast to json
+# serialize the chain to json
 json_obj = preprocessor.to_json()
 print("json:", json_obj)
 
@@ -48,6 +45,4 @@ from opendp_logger import make_load_json
 
 # reconstruct the obj from the json string
 test = make_load_json(json_obj)
-
-print(test.ast)
 ```
