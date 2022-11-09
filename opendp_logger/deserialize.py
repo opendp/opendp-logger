@@ -23,11 +23,11 @@ def jsonOpenDPDecoder(obj):
 
 def tree_walker(branch):
     if isinstance(branch, dict):
-        if branch.get('_type') == "constructor":
+        if branch.get("_type") == "constructor":
             branch = {
                 **branch,
-                "args": tuple(tree_walker(i) for i in branch['args']),
-                "kwargs": {k: tree_walker(v) for k, v in branch['kwargs'].items()},
+                "args": tuple(tree_walker(i) for i in branch["args"]),
+                "kwargs": {k: tree_walker(v) for k, v in branch["kwargs"].items()},
             }
             if branch["module"] == "transformations":
                 module = transformations
@@ -36,15 +36,15 @@ def tree_walker(branch):
             elif branch["module"] == "combinators":
                 module = combinators
             else:
-                raise ValueError(
-                    f"Type {branch['type']} not in Literal[\"Transformation\", \"Measurement\"]."
-                )
+                raise ValueError(f"Unrecognized module {branch['module']}.")
+
             return getattr(module, branch["func"])(*branch["args"], **branch["kwargs"])
+
         return {k: tree_walker(v) for k, v in branch.items()}
-    
+
     if isinstance(branch, list):
         return list(tree_walker(i) for i in branch)
-    
+
     return branch
 
 

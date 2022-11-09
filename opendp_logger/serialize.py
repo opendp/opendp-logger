@@ -33,8 +33,10 @@ class DPL_Encoder(json.JSONEncoder):
     def encode(self, obj) -> str:
         def walker(item):
             if isinstance(item, (Transformation, Measurement)):
-                if not hasattr(item, 'ast'):
-                    raise ValueError("invoke `opendp_logger.enable_logging()` before constructing your measurement")
+                if not hasattr(item, "ast"):
+                    raise ValueError(
+                        "invoke `opendp_logger.enable_logging()` before constructing your measurement"
+                    )
                 return walker(item.ast)
             if isinstance(item, tuple):
                 return {"_type": "Tuple", "_items": [walker(e) for e in item]}
@@ -44,7 +46,7 @@ class DPL_Encoder(json.JSONEncoder):
                 return {key: walker(value) for key, value in item.items()}
             else:
                 return item
-    
+
         return super().encode(walker(obj))
 
 
