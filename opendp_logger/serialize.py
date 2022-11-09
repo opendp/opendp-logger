@@ -1,5 +1,5 @@
+import opendp
 import json
-import opendp as opendp
 from functools import wraps
 
 from opendp_logger.deserialize import OPENDP_VERSION

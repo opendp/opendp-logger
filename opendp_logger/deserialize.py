@@ -1,4 +1,4 @@
-import opendp
+import importlib
 
 import json
 import builtins
@@ -22,7 +22,7 @@ def decode_ast(obj):
             return tuple(decode_ast(i) for i in obj["_items"])
 
         if obj.get("_type") == "constructor":
-            module = getattr(opendp, obj["module"])
+            module = importlib.import_module(f"opendp.{obj['module']}")
             constructor = getattr(module, obj["func"])
 
             return constructor(*decode_ast(obj["args"]), **decode_ast(obj["kwargs"]))
