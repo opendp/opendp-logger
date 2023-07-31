@@ -1,4 +1,4 @@
-import opendp
+import opendp.prelude as dp
 import json
 from functools import wraps
 
@@ -7,60 +7,92 @@ from opendp_logger.deserialize import OPENDP_VERSION
 import importlib
 
 __all__ = ["enable_logging"]
+LOGGED_CLASSES = (
+    dp.Transformation,
+    dp.Measurement,
+    dp.Function,
+    dp.Domain,
+    dp.Metric,
+    dp.Measure,
+    dp.PartialConstructor,
+)
+WRAPPED_MODULES = [
+    "transformations",
+    "measurements",
+    "combinators",
+    "domains",
+    "metrics",
+    "measures",
+    "prelude",
+]
 
 
-def wrap_constructor(f, module_name):
+def wrap_func(f, module_name):
     @wraps(f)
-    def wrapped(*args, **kwargs):
+    def wrapper(*args, **kwargs):
         chain = f(*args, **kwargs)
-        chain.log = {
-            "_type": "constructor",
-            "func": f.__name__,
-            "module": module_name,
-            "args": args,
-            "kwargs": kwargs,
-        }
+        if isinstance(chain, LOGGED_CLASSES):
+            chain.log = {
+                "_type": "constructor",
+                "func": f.__name__,
+                "module": module_name,
+            }
+            args and chain.log.setdefault("args", args)
+            kwargs and chain.log.setdefault("kwargs", kwargs)
         return chain
 
-    return wrapped
+    return wrapper
 
 
 def to_ast(item):
-    if isinstance(item, (opendp.Transformation, opendp.Measurement)):
+    if isinstance(item, LOGGED_CLASSES):
         if not hasattr(item, "log"):
             msg = "invoke `opendp_logger.enable_logging()` before constructing your measurement"
             raise ValueError(msg)
 
         return to_ast(item.log)
     if isinstance(item, tuple):
-        return {"_type": "tuple", "_items": [to_ast(e) for e in item]}
-    if isinstance(item, list):
         return [to_ast(e) for e in item]
+    if isinstance(item, list):
+        return {"_type": "list", "_items": [to_ast(e) for e in item]}
     if isinstance(item, dict):
         return {key: to_ast(value) for key, value in item.items()}
     if isinstance(item, type):
         return {"_type": "type", "name": item.__name__}
-    if isinstance(item, opendp.typing.RuntimeType):
+    if isinstance(item, dp.RuntimeType):
         return str(item)
     return item
 
 
-def to_json(chain):
-    return json.dumps({"version": OPENDP_VERSION, "ast": chain.to_ast()})
+def to_json(chain, *args, **kwargs):
+    return json.dumps(
+        {"version": OPENDP_VERSION, "ast": chain.to_ast()}, *args, **kwargs
+    )
 
 
 def enable_logging():
-    for name in ["transformations", "measurements", "combinators"]:
+    for name in WRAPPED_MODULES:
         module = importlib.import_module(f"opendp.{name}")
         for f in dir(module):
-            if f.startswith("make_"):
-                module.__dict__[f] = wrap_constructor(getattr(module, f), name)
+            is_constructor = f.startswith("make_") or f.startswith("then_")
+            is_elem = any(f.endswith(s) for s in ["domain", "distance", "divergence"])
+            if is_constructor or is_elem:
+                module.__dict__[f] = wrap_func(getattr(module, f), name)
 
-    opendp.Transformation.to_ast = to_ast
-    opendp.Measurement.to_ast = to_ast
+    for cls in LOGGED_CLASSES:
+        cls.to_ast = to_ast
+        cls.to_json = to_json
 
-    opendp.Transformation.to_json = to_json
-    opendp.Measurement.to_json = to_json
+    trans_shift_inner = dp.Transformation.__rshift__
+
+    @wraps(trans_shift_inner)
+    def trans_shift_outer(lhs: dp.Transformation, rhs):
+        chain = trans_shift_inner(lhs, rhs)
+        if isinstance(rhs, dp.PartialConstructor):
+            chain.log = {"_type": "partial_chain", "lhs": lhs.log, "rhs": rhs.log}
+        return chain
+
+    dp.Transformation.__rshift__ = trans_shift_outer
 
     # only run once
     enable_logging.__code__ = (lambda: None).__code__

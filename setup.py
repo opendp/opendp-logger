@@ -22,7 +22,7 @@ setup(
     packages=find_packages(),
     python_requires=">=3.8, <4",
     install_requires=[
-        "opendp >= 0.6.0"
+        "opendp >= 0.8.0"
     ],
     package_data={"oblv": ["py.typed"]},
 )
