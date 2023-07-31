@@ -17,7 +17,7 @@ def test_sized_mean():
 
 
 def test_base_laplace():
-    space = dp.atom_domain(T=float), dp.absolute_distance(T=float)
+    space = dp.atom_domain(T=float), dp.absolute_distance(T="f64")
     meas = space >> dp.m.then_laplace(0.01)
     serial = meas.to_json()
     make_load_json(serial)
