@@ -57,10 +57,8 @@ def to_ast(item):
         return {"_type": "list", "_items": [to_ast(e) for e in item]}
     if isinstance(item, dict):
         return {key: to_ast(value) for key, value in item.items()}
-    if isinstance(item, type):
-        return {"_type": "type", "name": item.__name__}
-    if isinstance(item, dp.RuntimeType):
-        return str(item)
+    if isinstance(item, (dp.RuntimeType, type)):
+        return str(dp.RuntimeType.parse(item))
     return item
 
 
