@@ -2,13 +2,13 @@ from setuptools import find_packages, setup
 
 setup(
     name="opendp-logger",
-    version="0.2.0",
+    version="0.3.0",
     description="A logger wrapper for OpenDP to keep track of, import, export the AST",
     long_description = open("README.md", "r").read(),
     long_description_content_type = "text/markdown",
     url="https://github.com/opendp/opendp-logger",
-    author='Oblivious',
-    author_email='hello@oblivious.ai',
+    author='The OpenDP Project',
+    author_email='info@opendp.org',
     license='MIT',
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -24,5 +24,4 @@ setup(
     install_requires=[
         "opendp >= 0.8.0"
     ],
-    package_data={"oblv": ["py.typed"]},
 )
