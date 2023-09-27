@@ -11,6 +11,17 @@ try:
 except pkg_resources.DistributionNotFound:
     OPENDP_VERSION = "development"
 
+try:
+    from polars import LazyFrame, DataFrame
+except ImportError:
+    class DataFrame(object):
+        pass
+    class LazyFrame(object):
+        def from_json(json) -> LazyFrame:
+            raise ValueError("attempted to load a LazyFrame, but Polars is not installed")
+        def collect(self) -> DataFrame:
+            raise ValueError("attempted to load a DataFrame, but Polars is not installed")
+
 __all__ = ["make_load_json", "make_load_ast"]
 
 
@@ -21,6 +32,12 @@ def decode_ast(obj):
 
         if obj.get("_type") == "list":
             return [decode_ast(i) for i in obj["_items"]]
+        
+        if obj.get("_type") == "DataFrame":
+            return LazyFrame.from_json(obj["_item"]).collect()
+        
+        if obj.get("_type") == "LazyFrame":
+            return LazyFrame.from_json(obj["_item"])
 
         if obj.get("_type") == "constructor":
             module = importlib.import_module(f"opendp.{obj['module']}")

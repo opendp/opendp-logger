@@ -2,7 +2,7 @@ import opendp.prelude as dp
 import json
 from functools import wraps
 
-from opendp_logger.deserialize import OPENDP_VERSION
+from opendp_logger.deserialize import OPENDP_VERSION, LazyFrame, DataFrame
 
 import importlib
 
@@ -53,6 +53,11 @@ def to_ast(item):
         return to_ast(item.log)
     if isinstance(item, tuple):
         return [to_ast(e) for e in item]
+    if isinstance(item, DataFrame):
+        # TODO: extremely inefficient
+        return {"_type": "DataFrame", "_item": item.lazy().serialize()}
+    if isinstance(item, LazyFrame):
+        return {"_type": "LazyFrame", "_item": item.serialize()}
     if isinstance(item, list):
         return {"_type": "list", "_items": [to_ast(e) for e in item]}
     if isinstance(item, dict):
@@ -67,6 +72,10 @@ def to_json(chain, *args, **kwargs):
         {"version": OPENDP_VERSION, "ast": chain.to_ast()}, *args, **kwargs
     )
 
+WHITELIST = [
+    "lazyframe_domain_with_counts",
+    "dataframe_domain_with_counts"
+]
 
 def enable_logging():
     for name in WRAPPED_MODULES:
@@ -74,7 +83,7 @@ def enable_logging():
         for f in dir(module):
             is_constructor = f.startswith("make_") or f.startswith("then_")
             is_elem = any(f.endswith(s) for s in ["domain", "distance", "divergence"])
-            if is_constructor or is_elem:
+            if is_constructor or is_elem or f in WHITELIST:
                 module.__dict__[f] = wrap_func(getattr(module, f), name)
 
     for cls in LOGGED_CLASSES:
