@@ -24,6 +24,7 @@ WRAPPED_MODULES = [
     "metrics",
     "measures",
     "prelude",
+    "core",
 ]
 
 
@@ -48,6 +49,7 @@ def to_ast(item):
     if isinstance(item, LOGGED_CLASSES):
         if not hasattr(item, "log"):
             msg = "invoke `opendp_logger.enable_logging()` before constructing your measurement"
+            print(item)
             raise ValueError(msg)
 
         return to_ast(item.log)
@@ -74,7 +76,10 @@ def to_json(chain, *args, **kwargs):
 
 WHITELIST = [
     "lazyframe_domain_with_counts",
-    "dataframe_domain_with_counts"
+    "dataframe_domain_with_counts",
+    "l1",
+    "l2",
+    "transformation_function"
 ]
 
 def enable_logging():
@@ -100,6 +105,17 @@ def enable_logging():
         return chain
 
     dp.Transformation.__rshift__ = trans_shift_outer
+
+    meas_shift_inner = dp.Measurement.__rshift__
+
+    @wraps(meas_shift_inner)
+    def meas_shift_outer(lhs: dp.Measurement, rhs):
+        chain = meas_shift_inner(lhs, rhs)
+        if isinstance(rhs, dp.PartialConstructor):
+            chain.log = {"_type": "partial_chain", "lhs": lhs.log, "rhs": rhs.log}
+        return chain
+
+    dp.Measurement.__rshift__ = meas_shift_outer
 
     # only run once
     enable_logging.__code__ = (lambda: None).__code__
