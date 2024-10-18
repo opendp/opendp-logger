@@ -23,19 +23,17 @@ Deserialize a JSON string into a Transformation/Measurement by invoking `opendp_
 ### Example
 ```python
 >>> from opendp_logger import enable_logging, make_load_json
->>> from opendp.mod import enable_features
+>>> import opendp.prelude as dp
 
 >>> enable_logging()
->>> enable_features("contrib")
-
->>> import opendp.transformations as trans
+>>> dp.enable_features("contrib")
 
 >>> preprocessor = (
 ...     # load data into a dataframe where columns are of type Vec<str>
-...     trans.make_split_dataframe(separator=",", col_names=["hello", "world"])
+...     dp.t.make_split_dataframe(separator=",", col_names=["hello", "world"])
 ...     >>
 ...     # select a column of the dataframe
-...     trans.make_select_column(key="income", TOA=str)
+...     dp.t.make_select_column(key="income", TOA=str)
 ... )
 
 >>> # serialize the chain to json
