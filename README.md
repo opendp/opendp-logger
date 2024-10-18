@@ -6,8 +6,9 @@
 
 The OpenDP logger makes it possible to serialize and deserialize OpenDP Measurements/Transformations to/from JSON.
 
+## Usage
 
-## Serialize
+### Serialize
 Enable logging (globally) before you build your transformations and/or measurements:
 
 ```python
@@ -16,10 +17,10 @@ enable_logging()
 ```
 Once this is enabled, Transformations/Measurements have a method `.to_json()` that returns a JSON string.
 
-## Deserialize
+### Deserialize
 Deserialize a JSON string into a Transformation/Measurement by invoking `opendp_logger.make_load_json`.
 
-# Example
+### Example
 ```python
 from opendp_logger import enable_logging
 from opendp.mod import enable_features
@@ -45,4 +46,16 @@ from opendp_logger import make_load_json
 
 # reconstruct the obj from the json string
 test = make_load_json(json_obj)
+```
+
+## Development
+
+```shell
+git clone https://github.com/opendp/opendp-logger.git
+cd opendp-logger
+python3 -m venv .venv
+source .venv/bin/activate
+pip install pytest
+pip install -e .
+pytest -v
 ```

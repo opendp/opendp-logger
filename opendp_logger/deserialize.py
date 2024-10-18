@@ -4,13 +4,6 @@ import importlib
 import json
 import builtins
 
-import pkg_resources
-
-try:
-    OPENDP_VERSION = pkg_resources.get_distribution("opendp").version
-except pkg_resources.DistributionNotFound:
-    OPENDP_VERSION = "development"
-
 __all__ = ["make_load_json", "make_load_ast"]
 
 
@@ -44,9 +37,12 @@ def make_load_json(parse_str: str):
 
 
 def make_load_ast(obj, force=False):
-    if obj["version"] != OPENDP_VERSION and not force:
-        raise ValueError(
-            f"OpenDP version in parsed object ({obj['version']}) does not match the current installation ({OPENDP_VERSION}). Set `force=True` to try to load anyways."
-        )
+    # TODO: Reenable when we can get the OpenDP version:
+    # https://github.com/opendp/opendp/issues/2103
+    #
+    # if obj["version"] != OPENDP_VERSION and not force:
+    #     raise ValueError(
+    #         f"OpenDP version in parsed object ({obj['version']}) does not match the current installation ({OPENDP_VERSION}). Set `force=True` to try to load anyways."
+    #     )
 
     return decode_ast(obj["ast"])
