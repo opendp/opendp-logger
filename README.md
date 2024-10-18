@@ -6,8 +6,9 @@
 
 The OpenDP logger makes it possible to serialize and deserialize OpenDP Measurements/Transformations to/from JSON.
 
+## Usage
 
-## Serialize
+### Serialize
 Enable logging (globally) before you build your transformations and/or measurements:
 
 ```python
@@ -16,33 +17,80 @@ enable_logging()
 ```
 Once this is enabled, Transformations/Measurements have a method `.to_json()` that returns a JSON string.
 
-## Deserialize
+### Deserialize
 Deserialize a JSON string into a Transformation/Measurement by invoking `opendp_logger.make_load_json`.
 
-# Example
+### Example
 ```python
-from opendp_logger import enable_logging
-from opendp.mod import enable_features
+>>> from opendp_logger import enable_logging, make_load_json
+>>> import opendp.prelude as dp
 
-enable_logging()
-enable_features("contrib")
+>>> enable_logging()
+>>> dp.enable_features("contrib")
 
-import opendp.transformations as trans
+>>> preprocessor = (
+...     # load data into a dataframe where columns are of type Vec<str>
+...     dp.t.make_split_dataframe(separator=",", col_names=["hello", "world"])
+...     >>
+...     # select a column of the dataframe
+...     dp.t.make_select_column(key="income", TOA=str)
+... )
 
-preprocessor = (
-    # load data into a dataframe where columns are of type Vec<str>
-    trans.make_split_dataframe(separator=",", col_names=["hello", "world"])
-    >>
-    # select a column of the dataframe
-    trans.make_select_column(key="income", TOA=str)
-)
+>>> # serialize the chain to json
+>>> json_obj = preprocessor.to_json(indent=2)
+>>> print(json_obj)
+{
+  "ast": {
+    "_type": "constructor",
+    "func": "make_chain_tt",
+    "module": "combinators",
+    "args": [
+      {
+        "_type": "constructor",
+        "func": "make_select_column",
+        "module": "transformations",
+        "kwargs": {
+          "key": "income",
+          "TOA": "String"
+        }
+      },
+      {
+        "_type": "constructor",
+        "func": "make_split_dataframe",
+        "module": "transformations",
+        "kwargs": {
+          "separator": ",",
+          "col_names": {
+            "_type": "list",
+            "_items": [
+              "hello",
+              "world"
+            ]
+          }
+        }
+      }
+    ]
+  }
+}
 
-# serialize the chain to json
-json_obj = preprocessor.to_json()
-print("json:", json_obj)
+>>> # reconstruct the obj from the json string
+>>> make_load_json(json_obj)
+Transformation(
+    input_domain   = AtomDomain(T=String),
+    output_domain  = VectorDomain(AtomDomain(T=String)),
+    input_metric   = SymmetricDistance(),
+    output_metric  = SymmetricDistance())
 
-from opendp_logger import make_load_json
+```
 
-# reconstruct the obj from the json string
-test = make_load_json(json_obj)
+## Development
+
+```shell
+git clone https://github.com/opendp/opendp-logger.git
+cd opendp-logger
+python3 -m venv .venv
+source .venv/bin/activate
+pip install pytest
+pip install -e .
+pytest -v
 ```

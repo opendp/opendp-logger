@@ -11,7 +11,12 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version:
+          - '3.9'
+          - '3.12'
+        opendp-version:
+          - '==0.8.0'
+          - ''
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -35,10 +40,18 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest
+          python -m pip install pytest coverage
 
       - name: Install package
         run: python -m pip install -e .
 
+      - name: (Re)install opendp
+        run: python -m pip install opendp${{ matrix.opendp-version }}
+
       - name: Test
-        run: cd test && pytest -v
+        # OpenDP doesn't have pretty pretty reprs in older versions,
+        # so skip the doc test in that case.
+        run: coverage run -m pytest -v ${{ matrix.opendp-version && '-k "not README"' || '' }}
+
+      - name: Check coverage
+        run: coverage report
