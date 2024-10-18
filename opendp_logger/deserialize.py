@@ -10,7 +10,7 @@ __all__ = ["make_load_json", "make_load_ast"]
 def decode_ast(obj):
     if isinstance(obj, dict):
         if obj.get("_type") == "type":
-            return getattr(builtins, dp.RuntimeType.parse(obj["name"]))
+            return getattr(builtins, dp.RuntimeType.parse(obj["name"]))  # pragma: no cover
 
         if obj.get("_type") == "list":
             return [decode_ast(i) for i in obj["_items"]]

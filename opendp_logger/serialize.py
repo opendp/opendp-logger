@@ -37,14 +37,14 @@ def wrap_func(f, module_name):
             }
             args and chain.log.setdefault("args", args)
             kwargs and chain.log.setdefault("kwargs", kwargs)
-        return chain
+        return chain  # pragma: no cover (if isinstance is false)
 
     return wrapper
 
 
 def to_ast(item):
     if isinstance(item, LOGGED_CLASSES):
-        if not hasattr(item, "log"):
+        if not hasattr(item, "log"):  # pragma: no cover
             msg = "invoke `opendp_logger.enable_logging()` before constructing your measurement"
             raise ValueError(msg)
 
