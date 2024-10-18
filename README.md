@@ -39,9 +39,41 @@ Deserialize a JSON string into a Transformation/Measurement by invoking `opendp_
 ... )
 
 >>> # serialize the chain to json
->>> json_obj = preprocessor.to_json()
+>>> json_obj = preprocessor.to_json(indent=2)
 >>> print(json_obj)
-{"ast": {"_type": "constructor", "func": "make_chain_tt", "module": "combinators", "args": [{"_type": "constructor", "func": "make_select_column", "module": "transformations", "kwargs": {"key": "income", "TOA": "String"}}, {"_type": "constructor", "func": "make_split_dataframe", "module": "transformations", "kwargs": {"separator": ",", "col_names": {"_type": "list", "_items": ["hello", "world"]}}}]}}
+{
+  "ast": {
+    "_type": "constructor",
+    "func": "make_chain_tt",
+    "module": "combinators",
+    "args": [
+      {
+        "_type": "constructor",
+        "func": "make_select_column",
+        "module": "transformations",
+        "kwargs": {
+          "key": "income",
+          "TOA": "String"
+        }
+      },
+      {
+        "_type": "constructor",
+        "func": "make_split_dataframe",
+        "module": "transformations",
+        "kwargs": {
+          "separator": ",",
+          "col_names": {
+            "_type": "list",
+            "_items": [
+              "hello",
+              "world"
+            ]
+          }
+        }
+      }
+    ]
+  }
+}
 
 >>> # reconstruct the obj from the json string
 >>> make_load_json(json_obj)
