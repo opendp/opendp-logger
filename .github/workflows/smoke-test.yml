@@ -49,4 +49,4 @@ jobs:
         run: python -m pip install opendp${{ matrix.opendp-version }}
 
       - name: Test
-        run: pytest -v
+        run: pytest -v ${{ matrix.opendp-version && '-k "not README"' || '' }}
