@@ -2,8 +2,6 @@ import opendp.prelude as dp
 import json
 from functools import wraps
 
-from opendp_logger.deserialize import OPENDP_VERSION
-
 import importlib
 
 __all__ = ["enable_logging"]
@@ -39,14 +37,14 @@ def wrap_func(f, module_name):
             }
             args and chain.log.setdefault("args", args)
             kwargs and chain.log.setdefault("kwargs", kwargs)
-        return chain
+        return chain  # pragma: no cover (if isinstance is false)
 
     return wrapper
 
 
 def to_ast(item):
     if isinstance(item, LOGGED_CLASSES):
-        if not hasattr(item, "log"):
+        if not hasattr(item, "log"):  # pragma: no cover
             msg = "invoke `opendp_logger.enable_logging()` before constructing your measurement"
             raise ValueError(msg)
 
@@ -64,7 +62,9 @@ def to_ast(item):
 
 def to_json(chain, *args, **kwargs):
     return json.dumps(
-        {"version": OPENDP_VERSION, "ast": chain.to_ast()}, *args, **kwargs
+        # TODO: Include OpenDP version
+        # https://github.com/opendp/opendp/issues/2103
+        {"ast": chain.to_ast()}, *args, **kwargs
     )
 
 
