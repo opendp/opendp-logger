@@ -16,7 +16,7 @@ jobs:
           - '3.12'
         opendp-version:
           - '==0.8.0'
-          - ''
+          - '[polars]' # ie, latest with polars extra
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
