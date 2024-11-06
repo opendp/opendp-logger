@@ -26,9 +26,16 @@ def test_context():
         .count()
         .laplace()
     )
-    with pytest.raises(AttributeError):
-        serialized_query = count_query.to_json()
-    # count_query_again = make_load_json(serialized_query)
-    # assert count_query_again.param() == ...
-    # assert count_query_again.release() == ...
+    serialized_query = count_query.resolve().to_json()
+
+    # TODO:
+    #     def trans_shift_outer(lhs: dp.Transformation, rhs):
+    #         chain = trans_shift_inner(lhs, rhs)
+    #         if isinstance(rhs, dp.PartialConstructor):
+    # >           chain.log = {"_type": "partial_chain", "lhs": lhs.log, "rhs": rhs.log}
+    # E           AttributeError: 'PartialConstructor' object has no attribute 'log'
+
+    count_query_again = make_load_json(serialized_query)
+    assert count_query_again.param() == ...
+    assert count_query_again.release() == ...
 
